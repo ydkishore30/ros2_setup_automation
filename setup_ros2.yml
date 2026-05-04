@@ -4,9 +4,9 @@
 
   vars:
     ros_distro: humble
-    ws_path: /home/dinesh/ros2_ws
+    ros_user: "{{ ansible_user }}"  # Uses the user from inventory
+    ws_path: "/home/{{ ros_user }}/ros2_ws"
     repo_url: "https://github.com/ydkishore30/ros_basics.git"
-    ros_user: dinesh
 
   tasks:
 

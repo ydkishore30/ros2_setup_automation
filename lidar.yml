@@ -3,9 +3,9 @@
   become: yes
 
   vars:
-    ros_user: dinesh
-    ws_path: /home/dinesh/ros2_ws
-    sdk_path: /home/dinesh/ydlidar_sdk
+    ros_user: "{{ ansible_user }}"  # Uses the user from inventory
+    ws_path: "/home/{{ ros_user }}/ros2_ws"
+    sdk_path: "/home/{{ ros_user }}/ydlidar_sdk"
     sdk_repo: https://github.com/YDLIDAR/YDLidar-SDK.git
     repo_url: https://github.com/Adlink-ROS/ydlidar_ros2_driver.git
 
@@ -64,7 +64,7 @@
 
     - name: Set SDK environment path
       lineinfile:
-        path: /home/dinesh/.bashrc
+        path: "/home/{{ ros_user }}/.bashrc"
         line: "export CMAKE_PREFIX_PATH=/usr/local:$CMAKE_PREFIX_PATH"
         state: present
 
@@ -101,6 +101,6 @@
     # =====================================================
     - name: Add ROS2 workspace sourcing to bashrc
       lineinfile:
-        path: /home/dinesh/.bashrc
-        line: "source ~/ros2_ws/install/setup.bash"
+        path: "/home/{{ ros_user }}/.bashrc"
+        line: "source /home/{{ ros_user }}/ros2_ws/install/setup.bash"
         state: present

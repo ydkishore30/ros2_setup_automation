@@ -100,7 +100,7 @@ cp inventory.ini.example inventory.ini
 Edit `inventory.ini`:
 ```ini
 [raspberrypi]
-pi ansible_host=raspberrypi.local ansible_user=dinesh
+pi ansible_host=raspberrypi.local ansible_user=<your_username>
 ```
 
 ### 3. Install Ansible
@@ -151,16 +151,16 @@ ansible-playbook -i inventory.ini setup_ros2.yml -K
 
 ## Configuration
 
-### Default Paths (can be modified in playbooks)
-- ROS2 Workspace: `/home/dinesh/ros2_ws`
-- YDLIDAR SDK: `/home/dinesh/ydlidar_sdk`
+### Default Paths (customizable via playbook variables)
+- ROS2 Workspace: `$HOME/ros2_ws` (configurable via `ws_path`)
+- YDLIDAR SDK: `$HOME/ydlidar_sdk` (configurable via `sdk_path`)
 - ROS Distro: `humble`
-- Default User: `dinesh`
+- Default User: Configure in `inventory.ini` and playbook `vars` section
 
 ### Environment Variables
 After setup, the following will be configured in `~/.bashrc`:
 - `source /opt/ros/humble/setup.bash` - ROS2 environment
-- `source ~/ros2_ws/install/setup.bash` - Workspace setup
+- `source $HOME/ros2_ws/install/setup.bash` - Workspace setup (adjust path as needed)
 - `export ROS_DOMAIN_ID=0` - ROS2 domain ID
 - `export CMAKE_PREFIX_PATH=/usr/local:$CMAKE_PREFIX_PATH` - CMake path (LIDAR)
 
@@ -215,10 +215,10 @@ ansible all -i inventory.ini -m ping
 ### Permission Denied on USB Devices
 ```bash
 # Ensure user is in dialout group
-groups dinesh
+groups <your_username>
 
 # Add if needed
-sudo usermod -aG dialout dinesh
+sudo usermod -aG dialout <your_username>
 ```
 
 ### rosdep Issues
@@ -258,7 +258,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Author
 
-**Dinesh** - [ydkishore30@gmail.com](mailto:ydkishore30@gmail.com)
+Contributed by the ROS2 Setup Automation community
 
 ## References
 
