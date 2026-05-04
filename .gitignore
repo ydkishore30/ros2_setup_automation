@@ -1,0 +1,7 @@
+inventory.ini
+*.yml.local
+.env
+.venv
+__pycache__/
+*.pyc
+*.log

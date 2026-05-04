@@ -1,0 +1,3 @@
+[raspberrypi]
+# Replace with your Raspberry Pi hostname and username
+pi ansible_host=raspberrypi.local ansible_user=your_username
