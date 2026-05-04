@@ -196,7 +196,7 @@ ls -la /dev/ttyUSB*
 ### SSH Connection Issues
 ```bash
 # Test SSH connection
-ssh -i ~/.ssh/id_rsa dinesh@raspberrypi.local
+ssh -i ~/.ssh/id_rsa <your_username>@raspberrypi.local
 
 # Enable SSH on Raspberry Pi if needed
 sudo systemctl start ssh
