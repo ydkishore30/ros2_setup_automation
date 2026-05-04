@@ -231,9 +231,9 @@ rosdep update
 ## Project Variables
 
 Key variables used across playbooks:
-- `ros_user`: System user (default: `dinesh`)
-- `ws_path`: ROS2 workspace path (default: `/home/dinesh/ros2_ws`)
-- `sdk_path`: YDLIDAR SDK path (default: `/home/dinesh/ydlidar_sdk`)
+- `ros_user`: System user (automatically set from `inventory.ini` via `{{ ansible_user }}`)
+- `ws_path`: ROS2 workspace path (default: `/home/{{ ros_user }}/ros2_ws`, customize in playbook `vars`)
+- `sdk_path`: YDLIDAR SDK path (default: `/home/{{ ros_user }}/ydlidar_sdk`, customize in playbook `vars`)
 - `ros_distro`: ROS distribution (default: `humble`)
 
 ## Security Notes
