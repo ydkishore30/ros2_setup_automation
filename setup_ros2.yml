@@ -1,0 +1,114 @@
+- name: Setup Raspberry Pi for ROS2 Development
+  hosts: raspberrypi
+  become: yes
+
+  vars:
+    ros_distro: humble
+    ws_path: /home/dinesh/ros2_ws
+    repo_url: "https://github.com/ydkishore30/ros_basics.git"
+    ros_user: dinesh
+
+  tasks:
+
+    # ---------------- SYSTEM UPDATE ----------------
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Upgrade system
+      apt:
+        upgrade: dist
+
+    # ---------------- ROS2 REPOSITORY ----------------
+    - name: Install prerequisites
+      apt:
+        name:
+          - curl
+          - gnupg
+          - lsb-release
+        state: present
+
+    - name: Add ROS2 GPG key
+      shell: |
+        curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | apt-key add -
+
+    - name: Add ROS2 repository
+      shell: |
+        echo "deb http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" \
+        > /etc/apt/sources.list.d/ros2.list
+
+    - name: Update apt after adding ROS2 repo
+      apt:
+        update_cache: yes
+
+
+    - name: Create ROS2 workspace
+      file:
+        path: "{{ ws_path }}/src"
+        state: directory
+        owner: "{{ ros_user }}"
+        group: "{{ ros_user }}"
+        mode: "0755"
+
+    - name: Clone ROS repository
+      become: yes
+      become_user: "{{ ros_user }}"
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ ws_path }}/src/ros_basics"
+        force: yes
+
+    
+    - name: Build ROS2 workspace
+      become: yes
+      become_user: "{{ ros_user }}"
+      shell: |
+        source /opt/ros/humble/setup.bash
+        cd {{ ws_path }}
+        colcon build
+      args:
+        executable: /bin/bash
+    # ---------------- ROS2 INSTALL ----------------
+    - name: Install ROS2 base
+      apt:
+        name: ros-humble-ros-base
+        state: present
+
+    - name: Install ROS2 build tools
+      apt:
+        name:
+          - python3-colcon-common-extensions
+          - python3-rosdep
+          - python3-pip
+        state: present
+
+    - name: Initialize rosdep
+      shell: |
+        rosdep init || true
+        rosdep update
+
+    # ---------------- ENVIRONMENT SETUP ----------------
+    - name: Source ROS2 in bashrc
+      lineinfile:
+        path: "{{ ansible_env.HOME }}/.bashrc"
+        line: "source /opt/ros/humble/setup.bash"
+        state: present
+
+    - name: Set ROS domain ID
+      lineinfile:
+        path:  "{{ ansible_env.HOME }}/.bashrc"
+        line: "export ROS_DOMAIN_ID=0"
+
+    - name: Install ROS2 demo nodes
+      apt:
+        name:
+          - ros-humble-demo-nodes-cpp
+          - ros-humble-demo-nodes-py
+        state: present
+        update_cache: yes
+
+    - name: ROS2 for login shell
+      lineinfile:
+        path: "{{ ansible_env.HOME }}/.profile"
+        line: "source /opt/ros/humble/setup.bash"
+        state: present

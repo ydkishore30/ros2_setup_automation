@@ -1,0 +1,96 @@
+- name: Install ROS2 on Laptop (Ubuntu 22.04)
+  hosts: localhost
+  become: yes
+  connection: local
+
+  tasks:
+
+    # ---------------- BASIC DEPENDENCIES ----------------
+    - name: Install prerequisites
+      apt:
+        name:
+          - curl
+          - gnupg
+          - lsb-release
+          - software-properties-common
+        state: present
+        update_cache: yes
+
+    # ---------------- ADD ROS2 REPOSITORY ----------------
+    - name: Add ROS2 GPG key
+      apt_key:
+        url: https://raw.githubusercontent.com/ros/rosdistro/master/ros.key
+        state: present
+
+    - name: Add ROS2 repository
+      apt_repository:
+        repo: deb http://packages.ros.org/ros2/ubuntu jammy main
+        state: present
+
+    # ---------------- INSTALL ROS2 DESKTOP ----------------
+    - name: Install ROS2 Desktop
+      apt:
+        name: ros-humble-desktop
+        state: present
+        update_cache: yes
+
+    # ---------------- ENVIRONMENT SETUP ----------------
+    - name: Source ROS2 in bashrc
+      lineinfile:
+        path: "{{ ansible_env.HOME }}/.bashrc"
+        line: "source /opt/ros/humble/setup.bash"
+        state: present
+
+    # ---------------- ROS2 BUILD TOOLS ----------------
+    - name: Install colcon build tools
+      apt:
+        name:
+          - python3-colcon-common-extensions
+          - python3-rosdep
+          - python3-vcstool
+        state: present
+
+    # ---------------- INITIALIZE ROSDEP ----------------
+    - name: Initialize rosdep
+      shell: |
+        rosdep init || true
+        rosdep update
+      args:
+        executable: /bin/bash
+
+
+        # ---------------- RVIZ + GAZEBO ----------------
+    - name: Install RViz2 and Gazebo tools
+      apt:
+        name:
+          - ros-humble-rviz2
+          - ros-humble-rviz-common
+          - ros-humble-rviz-default-plugins
+          - ros-humble-gazebo-ros-pkgs
+          - ros-humble-gazebo-ros
+          - gazebo
+        state: present
+        update_cache: yes 
+
+        # ---------------- VISUALIZATION + SIMULATION ----------------
+    - name: Install RViz2 and Gazebo
+      apt:
+        name:
+          - ros-humble-rviz2
+          - ros-humble-rviz-default-plugins
+          - ros-humble-gazebo-ros-pkgs
+          - gazebo
+        state: present
+        update_cache: yes
+
+    - name: ROS2 for interactive shell
+      lineinfile:
+        path: "{{ ansible_env.HOME }}/.bashrc"
+        line: "source /opt/ros/humble/setup.bash"
+        state: present
+
+    - name: ROS2 for login shell
+      lineinfile:
+        path: "{{ ansible_env.HOME }}/.profile"
+        line: "source /opt/ros/humble/setup.bash"
+        state: present

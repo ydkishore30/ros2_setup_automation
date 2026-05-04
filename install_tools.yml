@@ -1,0 +1,29 @@
+- name: Setup Raspberry Pi for ROS
+  hosts: raspberrypi
+  become: yes
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Upgrade system
+      apt:
+        upgrade: dist
+
+    - name: Install basic tools
+      apt:
+        name:
+          - git
+          - curl
+          - vim
+          - net-tools
+          - htop
+          - network-manager
+        state: present
+
+    - name: Install SSH tools
+      apt:
+        name:
+          - openssh-server
+        state: present

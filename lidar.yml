@@ -1,0 +1,106 @@
+- name: Setup YDLIDAR + SDK in ROS2 workspace (single workspace)
+  hosts: raspberrypi
+  become: yes
+
+  vars:
+    ros_user: dinesh
+    ws_path: /home/dinesh/ros2_ws
+    sdk_path: /home/dinesh/ydlidar_sdk
+    sdk_repo: https://github.com/YDLIDAR/YDLidar-SDK.git
+    repo_url: https://github.com/Adlink-ROS/ydlidar_ros2_driver.git
+
+  tasks:
+
+    # =====================================================
+    # SYSTEM DEPENDENCIES
+    # =====================================================
+    - name: Install system packages
+      apt:
+        name:
+          - git
+          - cmake
+          - build-essential
+          - python3-serial
+          - libudev-dev
+          - pkg-config
+        state: present
+        update_cache: yes
+
+    # =====================================================
+    # ROS2 LIDAR DEPENDENCIES
+    # =====================================================
+    - name: Install ROS2 dependencies
+      apt:
+        name:
+          - ros-humble-sensor-msgs
+          - ros-humble-std-msgs
+          - ros-humble-rclcpp
+        state: present
+
+    # =====================================================
+    # YDLIDAR SDK INSTALL
+    # =====================================================
+    - name: Clone YDLIDAR SDK
+      become: yes
+      become_user: "{{ ros_user }}"
+      git:
+        repo: "{{ sdk_repo }}"
+        dest: "{{ sdk_path }}"
+        force: yes
+
+    - name: Build YDLIDAR SDK
+      become: yes
+      become_user: "{{ ros_user }}"
+      shell: |
+        cd {{ sdk_path }}
+        rm -rf build
+        mkdir build
+        cd build
+        cmake ..
+        make -j$(nproc)
+        sudo make install
+      args:
+        executable: /bin/bash
+
+    - name: Set SDK environment path
+      lineinfile:
+        path: /home/dinesh/.bashrc
+        line: "export CMAKE_PREFIX_PATH=/usr/local:$CMAKE_PREFIX_PATH"
+        state: present
+
+    # =====================================================
+    # SINGLE ROS2 WORKSPACE SETUP
+    # =====================================================
+    - name: Create ROS2 workspace
+      file:
+        path: "{{ ws_path }}/src"
+        state: directory
+        owner: "{{ ros_user }}"
+        group: "{{ ros_user }}"
+        mode: "0755"
+
+    - name: Add user to dialout group (USB access)
+      user:
+        name: "{{ ros_user }}"
+        groups: dialout
+        append: yes
+
+    # =====================================================
+    # CLONE LIDAR DRIVER INTO ros2_ws
+    # =====================================================
+    - name: Clone YDLIDAR ROS2 driver
+      become: yes
+      become_user: "{{ ros_user }}"
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ ws_path }}/src/ydlidar_ros2_driver"
+        force: yes
+
+    # =====================================================
+    # OPTIONAL: AUTO SOURCE SETUP
+    # =====================================================
+    - name: Add ROS2 workspace sourcing to bashrc
+      lineinfile:
+        path: /home/dinesh/.bashrc
+        line: "source ~/ros2_ws/install/setup.bash"
+        state: present

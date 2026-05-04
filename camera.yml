@@ -1,0 +1,43 @@
+- name: Setup Raspberry Pi Camera for ROS2
+  hosts: raspberrypi
+  become: yes
+
+  tasks:
+
+    # ---------------- SYSTEM CAMERA STACK ----------------
+    - name: Install system camera dependencies
+      apt:
+        name:
+          - v4l-utils
+          - ffmpeg
+          - gstreamer1.0-tools
+          - libcamera-tools
+        state: present
+        update_cache: yes
+
+    # ---------------- ROS2 CAMERA STACK ----------------
+    - name: Install ROS2 camera packages
+      apt:
+        name:
+          - ros-humble-v4l2-camera
+          - ros-humble-image-transport
+          - ros-humble-cv-bridge
+        state: present
+        update_cache: yes
+
+    # ---------------- PERMISSIONS ----------------
+    - name: Ensure user has camera access
+      user:
+        name: "{{ ansible_user }}"
+        groups: video
+        append: yes
+
+    # ---------------- VERIFY DEVICE (optional but useful) ----------------
+    - name: Check video devices exist
+      shell: ls /dev/video*
+      register: video_devices
+      ignore_errors: yes
+
+    - name: Show video devices
+      debug:
+        var: video_devices.stdout_lines
