@@ -4,7 +4,7 @@
 
   vars:
     ros_distro: humble
-    ros_user: "{{ ansible_user }}"  # Uses the user from inventory
+    ros_user: "{{ ansible_user }}"
     ws_path: "/home/{{ ros_user }}/ros2_ws"
     repo_url: "https://github.com/ydkishore30/ros_basics.git"
 
@@ -19,29 +19,57 @@
       apt:
         upgrade: dist
 
-    # ---------------- ROS2 REPOSITORY ----------------
+    # ---------------- PREREQUISITES ----------------
     - name: Install prerequisites
       apt:
         name:
           - curl
           - gnupg
           - lsb-release
+          - software-properties-common
         state: present
 
+    # ---------------- ROS2 REPOSITORY ----------------
     - name: Add ROS2 GPG key
       shell: |
-        curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | apt-key add -
+        curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc \
+        | gpg --dearmor -o /usr/share/keyrings/ros-archive-keyring.gpg
+      args:
+        creates: /usr/share/keyrings/ros-archive-keyring.gpg
 
     - name: Add ROS2 repository
       shell: |
-        echo "deb http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" \
+        echo "deb [signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] \
+        http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" \
         > /etc/apt/sources.list.d/ros2.list
 
     - name: Update apt after adding ROS2 repo
       apt:
         update_cache: yes
 
+    # ---------------- ROS2 INSTALL ----------------
+    - name: Install ROS2 base
+      apt:
+        name: "ros-{{ ros_distro }}-ros-base"
+        state: present
 
+    - name: Install ROS2 build tools
+      apt:
+        name:
+          - python3-colcon-common-extensions
+          - python3-rosdep
+          - python3-pip
+        state: present
+
+    # ---------------- ROSDEP ----------------
+    - name: Initialize rosdep (first time only)
+      shell: |
+        if [ ! -f /etc/ros/rosdep/sources.list.d/20-default.list ]; then
+          rosdep init
+        fi
+        rosdep update
+
+    # ---------------- WORKSPACE SETUP ----------------
     - name: Create ROS2 workspace
       file:
         path: "{{ ws_path }}/src"
@@ -58,57 +86,46 @@
         dest: "{{ ws_path }}/src/ros_basics"
         force: yes
 
-    
+    # ---------------- BUILD WORKSPACE ----------------
     - name: Build ROS2 workspace
       become: yes
       become_user: "{{ ros_user }}"
       shell: |
-        source /opt/ros/humble/setup.bash
+        source /opt/ros/{{ ros_distro }}/setup.bash
         cd {{ ws_path }}
         colcon build
       args:
         executable: /bin/bash
-    # ---------------- ROS2 INSTALL ----------------
-    - name: Install ROS2 base
-      apt:
-        name: ros-humble-ros-base
-        state: present
-
-    - name: Install ROS2 build tools
-      apt:
-        name:
-          - python3-colcon-common-extensions
-          - python3-rosdep
-          - python3-pip
-        state: present
-
-    - name: Initialize rosdep
-      shell: |
-        rosdep init || true
-        rosdep update
 
     # ---------------- ENVIRONMENT SETUP ----------------
     - name: Source ROS2 in bashrc
       lineinfile:
-        path: "{{ ansible_env.HOME }}/.bashrc"
-        line: "source /opt/ros/humble/setup.bash"
+        path: "/home/{{ ros_user }}/.bashrc"
+        line: "source /opt/ros/{{ ros_distro }}/setup.bash"
         state: present
 
     - name: Set ROS domain ID
       lineinfile:
-        path:  "{{ ansible_env.HOME }}/.bashrc"
+        path: "/home/{{ ros_user }}/.bashrc"
         line: "export ROS_DOMAIN_ID=0"
 
+    - name: Source workspace in bashrc
+      lineinfile:
+        path: "/home/{{ ros_user }}/.bashrc"
+        line: "source {{ ws_path }}/install/setup.bash"
+        state: present
+
+    # ---------------- DEMO NODES ----------------
     - name: Install ROS2 demo nodes
       apt:
         name:
-          - ros-humble-demo-nodes-cpp
-          - ros-humble-demo-nodes-py
+          - "ros-{{ ros_distro }}-demo-nodes-cpp"
+          - "ros-{{ ros_distro }}-demo-nodes-py"
         state: present
         update_cache: yes
 
     - name: ROS2 for login shell
       lineinfile:
-        path: "{{ ansible_env.HOME }}/.profile"
-        line: "source /opt/ros/humble/setup.bash"
+        path: "/home/{{ ros_user }}/.profile"
+        line: "source /opt/ros/{{ ros_distro }}/setup.bash"
         state: present
